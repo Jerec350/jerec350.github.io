@@ -1,1 +1,8 @@
-
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.jerec350.twa",
+        "sha256_cert_fingerprints": ["DB:CF:1A:2D:5D:B1:7A:31:3D:7A:EF:C6:6D:71:29:A8:D2:16:0B:E0:62:6D:18:2C:22:B7:DE:66:92:12:B5:3E"]
+      }
+    }]
