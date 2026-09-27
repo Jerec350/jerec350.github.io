@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily Report</title>
+<!-- Lets "Add to Home Screen" launch this full-screen like a real app
+     instead of inside a browser tab, on both iOS and Android. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Daily Report">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1d1f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --ink: #1a1d1f;
+    --paper: #fbfaf7;
+    --line: #d8d3c8;
+    --accent: #8a6d3b;
+    --accent-soft: #f1ead9;
+    --danger: #a13d2f;
+    --muted: #6b6459;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace;
+    padding: 14px 12px 90px;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.45;
+  }
+  h1 {
+    font-size: 16px;
+    letter-spacing: 0.03em;
+    text-align: center;
+    margin: 4px 0 2px;
+    text-transform: uppercase;
+  }
+  .subhead {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  section {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: white;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .section-title {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 7px 10px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .section-body { padding: 10px; }
+  label {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 3px;
+  }
+  /* SIDA / TUG entry text (not Time, which is numeric) displays uppercase
+     as it's typed, matching how it appears on the exported report. */
+  input.uc-input { text-transform: uppercase; }
+  input[type=text], input[type=number], textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 7px 8px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: bold;
+    background: #fff;
+    color: var(--ink);
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .field { margin-bottom: 10px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .checkpoint {
+    border-bottom: 1px solid var(--line);
+    padding: 9px 10px;
+  }
+  .checkpoint:last-child { border-bottom: none; }
+  .cp-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .chip {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .chip button {
+    border: none; background: none; color: var(--danger);
+    font-weight: bold; font-size: 15px; cursor: pointer; padding: 0 2px; line-height: 1;
+  }
+  .add-time { display: flex; gap: 6px; align-items: center; }
+  .add-time input { width: 76px; text-align: center; letter-spacing: 0.05em; }
+  .add-time button {
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    border-radius: 3px; padding: 7px 10px; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+
+  .remark-row { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+  .remark-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .remark-label { font-weight: bold; font-size: 15px; margin-bottom: 6px; }
+  .small-btn {
+    border: 1px solid var(--ink); background: white; color: var(--ink);
+    border-radius: 3px; padding: 6px 10px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .remove-link {
+    border: none; background: none; color: var(--danger); font-size: 13px; font-weight: 700;
+    text-decoration: underline; cursor: pointer; padding: 4px 0; font-family: inherit;
+  }
+  .ap-grid { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+
+  .toolbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--paper); border-top: 1px solid var(--line);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 8px;
+    transform: translateY(0);
+    transition: transform 0.22s ease;
+    z-index: 40;
+  }
+  /* Collapsed by default so the menu doesn't cover the form. */
+  .toolbar.collapsed {
+    transform: translateY(110%);
+  }
+  .menu-fab {
+    position: fixed;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    z-index: 45;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 24px;
+    padding: 12px 18px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .menu-fab.hidden { display: none; }
+  .toolbar .row { display: flex; gap: 8px; }
+  .toolbar button {
+    flex: 1; padding: 12px 6px; border-radius: 4px; font-family: inherit;
+    font-size: 15px; font-weight: bold; cursor: pointer; letter-spacing: 0.02em;
+  }
+  .btn-primary { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); }
+  .btn-secondary { background: white; color: var(--ink); border: 1px solid var(--ink); }
+  .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+
+  .status { text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); margin: -6px 0 12px; }
+  .status.saved { color: #5a7a4f; }
+  .tip {
+    font-size: 13px; font-weight: 700; color: var(--muted); text-align: center; margin: 0;
+  }
+
+  #previewOverlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 50;
+    background: white; overflow-y: auto;
+    padding: 16px 14px 40px;
+  }
+  #previewOverlay.open { display: block; }
+  .preview-close {
+    position: sticky; top: 0; float: right;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    border-radius: 4px; padding: 8px 14px; font-family: inherit; font-size: 15px;
+    font-weight: bold; cursor: pointer; z-index: 51;
+  }
+  .preview-doc { color: #111; clear: both; padding-top: 44px; overflow-x: hidden; }
+  /* The document body is injected verbatim at its true 540pt width and
+     scaled to fit. Only the wrapper is styled here; everything inside
+     carries the same inline styles as the exported Word file. */
+  /* Full 8.5in page (816px at 96dpi) with real 0.5in margins, so the
+     content area inside is exactly the 720px the document is laid out
+     for. Showing the page edge makes it obvious that nothing overflows. */
+  .preview-doc .doc-page {
+    width: 816px;
+    padding: 48px;  /* 0.5in margins, matching the document */
+    box-sizing: border-box;
+    transform-origin: top left;
+    font-family: Calibri, Arial, Helvetica, sans-serif;
+    background: #fff;
+    border: 1px solid #bbb;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .preview-doc .doc-scaler { overflow: hidden; }
+  .preview-doc .doc-page p { margin: 0; }
+</style>
+</head>
+<body>
+
+<h1>Marshal's Office Daily Report</h1>
+<div class="subhead">Daily Patrol Log</div>
+<div id="status" class="status">Loading…</div>
+
+<section>
+  <div class="section-title">Shift Info</div>
+  <div class="section-body">
+    <div class="row2">
+      <div class="field">
+        <label>Date</label>
+        <input type="text" id="date" placeholder="Date">
+      </div>
+      <div class="field">
+        <label>Hours</label>
+        <input type="text" id="hours" placeholder="Hours">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Deputy</label>
+        <input type="text" id="deputy" placeholder="Name">
+      </div>
+      <div class="field">
+        <label>Unit #</label>
+        <input type="text" id="unit" placeholder="Unit #">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-title">Checkpoints</div>
+  <div class="section-body" id="checkpoints" style="padding:0;"></div>
+</section>
+
+<section>
+  <div class="section-title">Remarks</div>
+  <div class="section-body">
+
+    <div class="remark-row">
+      <div class="remark-label">Security Check &mdash; AP-1 (SUV)</div>
+      <div class="ap-grid">
+        <input type="text" id="ap1Time" placeholder="Time" maxlength="4">
+        <input type="text" id="ap1Note" placeholder="Note">
+      </div>
+    </div>
+    <div class="remark-row">
+      <div class="remark-label">Security Check &mdash; AP-2 (Truck)</div>
+      <div class="ap-grid">
+        <input type="text" id="ap2Time" placeholder="Time" maxlength="4">
+        <input type="text" id="ap2Note" placeholder="Note">
+      </div>
+    </div>
+    <div class="remark-row">
+      <div class="remark-label">Security Check &mdash; SP-10 (Charger)</div>
+      <div class="ap-grid">
+        <input type="text" id="ap3Time" placeholder="Time" maxlength="4">
+        <input type="text" id="ap3Note" placeholder="Note">
+      </div>
+    </div>
+
+    <div class="remark-row">
+      <div class="remark-label">SIDA Checks</div>
+      <div id="sidaChecks"></div>
+      <button class="small-btn" onclick="addSida()">+ Add SIDA Check</button>
+    </div>
+
+    <div class="remark-row">
+      <div class="remark-label">TUG Entries</div>
+      <div id="tugEntries"></div>
+      <button class="small-btn" onclick="addTug()">+ Add TUG Entry</button>
+    </div>
+
+    <div class="remark-row">
+      <div class="field">
+        <label>Lock &amp; Dam Area Check</label>
+        <input type="text" id="lockDam" placeholder="Time" maxlength="4">
+      </div>
+    </div>
+
+    <div class="remark-row">
+      <div class="remark-label">FBO Employee/Handicap Violations</div>
+      <textarea id="violations" rows="3" placeholder="Violations"></textarea>
+    </div>
+
+    <div class="remark-row">
+      <div class="remark-label">Notes</div>
+      <textarea id="notes" rows="2" placeholder="Notes"></textarea>
+    </div>
+
+  </div>
+</section>
+
+<button class="menu-fab" id="menuFab" onclick="toggleMenu(true)">MENU</button>
+<div class="toolbar collapsed" id="toolbar">
+  <p class="tip" id="tip">Fill in the report, then view or email the matching Word doc.</p>
+  <div class="row">
+    <button class="btn-secondary" onclick="showPreview()">View Word Doc</button>
+    <button class="btn-secondary" onclick="saveWordDoc()">Save to Files</button>
+  </div>
+  <div class="row">
+    <button class="btn-primary" onclick="emailPdf()">Email PDF</button>
+  </div>
+  <div class="row">
+    <button class="btn-danger" onclick="clearReport()">New Report</button>
+  </div>
+  <div class="row">
+    <button class="btn-secondary" onclick="backupData()">Backup</button>
+    <button class="btn-secondary" onclick="document.getElementById('restoreFile').click()">Restore</button>
+  </div>
+  <div class="row">
+    <button class="btn-secondary" onclick="toggleMenu(false)">Close Menu</button>
+  </div>
+  <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreData(this)">
+</div>
+
+<div id="previewOverlay">
+  <button class="preview-close" onclick="closePreview()">Close</button>
+  <div class="preview-doc" id="previewContent"></div>
+</div>
+
+<script>
+const CHECKPOINTS = [
+  "ADMINISTRATION",
+  "BAGGAGE CLAIM / CAR RENTAL",
+  "FRONT CURB / ENTRANCES",
+  "TSA CHECKPOINT / TEMPORARY DOORS",
+  "TICKETING",
+  "HOLDING ROOM / EXIT LANE",
+  "PENETRATION TEST",
+  "SIDA",
+  "MAINTENANCE BUILDING",
+  "PHINIZY SWAMP - PARKING",
+  "MAJESTIC SKIES WAY",
+  "PARKING LOTS (A, B, C, D, E)",
+  "FBO BUILDING & EMPLOYEE PARKING",
+  "WEATHER BUILDING",
+  "NORTH FUEL FARM",
+  "HANGARS",
+  "STANDARD AERO",
+  "AOA",
+  "PERIMETER",
+  "GUN SAFES - FUNCTION TEST"
+];
+const MAX_ROUNDS = 9;
+const STORAGE_KEY = 'daily-report-draft-v4';
+
+let state = {
+  date: '', hours: '', deputy: '', unit: '',
+  checkpointTimes: {},
+  ap1Time: '', ap1Note: '',
+  ap2Time: '', ap2Note: '',
+  ap3Time: '', ap3Note: '',
+  sidaChecks: [{name:'',time:'',employer:''}, {name:'',time:'',employer:''}],
+  tugEntries: [{number:'',time:'',airline:''}],
+  lockDam: '', violations: '', notes: ''
+};
+CHECKPOINTS.forEach(c => state.checkpointTimes[c] = []);
+
+// Persistence layer: use Claude's window.storage when running inside the
+// Claude app (live preview), and fall back to the browser's own localStorage
+// when this file is downloaded and opened standalone — which is how it's
+// actually used day-to-day, and window.storage does not exist there.
+async function storageGet(key) {
+  if (window.storage) {
+    try {
+      const res = await window.storage.get(key, false);
+      return res ? res.value : null;
+    } catch (e) { /* fall through to localStorage */ }
+  }
+  try {
+    return window.localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function storageSet(key, value) {
+  if (window.storage) {
+    try {
+      await window.storage.set(key, value, false);
+      return true;
+    } catch (e) { /* fall through to localStorage */ }
+  }
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function setStatus(msg, saved) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (saved ? ' saved' : '');
+}
+
+async function loadState() {
+  try {
+    const val = await storageGet(STORAGE_KEY);
+    if (val) {
+      const loaded = JSON.parse(val);
+      state = Object.assign(state, loaded);
+      CHECKPOINTS.forEach(c => { if (!state.checkpointTimes[c]) state.checkpointTimes[c] = []; });
+    }
+    setStatus('Draft loaded', true);
+  } catch (e) {
+    setStatus('Starting new draft', true);
+  }
+  renderAll();
+}
+
+let saveTimer = null;
+function saveState() {
+  setStatus('Saving…', false);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const ok = await storageSet(STORAGE_KEY, JSON.stringify(state));
+    setStatus(ok ? 'Saved' : 'Save failed — data may not persist', ok);
+  }, 300);
+}
+
+function renderAll() {
+  document.getElementById('date').value = state.date;
+  document.getElementById('hours').value = state.hours;
+  document.getElementById('deputy').value = state.deputy;
+  document.getElementById('unit').value = state.unit;
+  document.getElementById('ap1Time').value = state.ap1Time;
+  document.getElementById('ap1Note').value = state.ap1Note;
+  document.getElementById('ap2Time').value = state.ap2Time;
+  document.getElementById('ap2Note').value = state.ap2Note;
+  document.getElementById('ap3Time').value = state.ap3Time;
+  document.getElementById('ap3Note').value = state.ap3Note;
+  document.getElementById('lockDam').value = state.lockDam;
+  document.getElementById('violations').value = state.violations;
+  document.getElementById('notes').value = state.notes;
+  renderCheckpoints();
+  renderSida();
+  renderTug();
+}
+
+function renderCheckpoints() {
+  const wrap = document.getElementById('checkpoints');
+  wrap.innerHTML = '';
+  CHECKPOINTS.forEach(cp => {
+    const times = state.checkpointTimes[cp];
+    const div = document.createElement('div');
+    div.className = 'checkpoint';
+    const chips = times.map((t, i) =>
+      `<span class="chip">${t}<button onclick="removeTime('${cp.replace(/'/g,"\\'")}',${i})">×</button></span>`
+    ).join('');
+    const canAdd = times.length < MAX_ROUNDS;
+    div.innerHTML = `
+      <div class="cp-name">${cp}</div>
+      <div class="chips">
+        ${chips}
+        ${canAdd ? `
+          <span class="add-time">
+            <input type="text" maxlength="4" placeholder="Time" id="in-${cp.replace(/[^A-Z0-9]/g,'')}">
+            <button onclick="addTime('${cp.replace(/'/g,"\\'")}')">+</button>
+          </span>` : ''}
+      </div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function addTime(cp) {
+  const id = 'in-' + cp.replace(/[^A-Z0-9]/g,'');
+  const input = document.getElementById(id);
+  const val = input.value.trim();
+  if (!val) return;
+  state.checkpointTimes[cp].push(val);
+  saveState();
+  renderCheckpoints();
+}
+function removeTime(cp, idx) {
+  state.checkpointTimes[cp].splice(idx, 1);
+  saveState();
+  renderCheckpoints();
+}
+
+function renderSida() {
+  const wrap = document.getElementById('sidaChecks');
+  wrap.innerHTML = state.sidaChecks.map((t, i) => `
+    <div class="row3" style="margin-bottom:6px;">
+      <input type="text" class="uc-input" placeholder="Name" value="${t.name}" oninput="updateSida(${i},'name',this.value)">
+      <input type="text" placeholder="Time" maxlength="4" value="${t.time}" oninput="updateSida(${i},'time',this.value)">
+      <input type="text" class="uc-input" placeholder="Employer" value="${t.employer}" oninput="updateSida(${i},'employer',this.value)">
+    </div>
+    ${state.sidaChecks.length > 1 ? `<button class="remove-link" onclick="removeSida(${i})">Remove check #${i+1}</button>` : ''}
+  `).join('');
+}
+function updateSida(i, field, val) { state.sidaChecks[i][field] = field === 'time' ? val : val.toUpperCase(); saveState(); }
+function addSida() { state.sidaChecks.push({name:'',time:'',employer:''}); saveState(); renderSida(); }
+function removeSida(i) { state.sidaChecks.splice(i,1); saveState(); renderSida(); }
+
+function renderTug() {
+  const wrap = document.getElementById('tugEntries');
+  wrap.innerHTML = state.tugEntries.map((t, i) => `
+    <div class="row3" style="margin-bottom:6px;">
+      <input type="text" class="uc-input" placeholder="TUG #" value="${t.number}" oninput="updateTug(${i},'number',this.value)">
+      <input type="text" placeholder="Time" maxlength="4" value="${t.time}" oninput="updateTug(${i},'time',this.value)">
+      <input type="text" class="uc-input" placeholder="Airline" value="${t.airline}" oninput="updateTug(${i},'airline',this.value)">
+    </div>
+    ${state.tugEntries.length > 1 ? `<button class="remove-link" onclick="removeTug(${i})">Remove entry #${i+1}</button>` : ''}
+  `).join('');
+}
+function updateTug(i, field, val) { state.tugEntries[i][field] = field === 'time' ? val : val.toUpperCase(); saveState(); }
+function addTug() { state.tugEntries.push({number:'',time:'',airline:''}); saveState(); renderTug(); }
+function removeTug(i) { state.tugEntries.splice(i,1); saveState(); renderTug(); }
+
+['date','hours','deputy','unit','ap1Time','ap1Note','ap2Time','ap2Note','ap3Time','ap3Note','lockDam','violations','notes'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    state[id] = e.target.value;
+    saveState();
+  });
+});
+
+// ---- Word doc generation (matches the source document layout) ----
+function buildWordDocHtml() {
+  const up = (s) => (s || '').toString().toUpperCase();
+  const maxCols = MAX_ROUNDS;
+  // Column widths taken directly from the reference document:
+  // label 162pt, each time column 41.4pt (7.425in total, fits 0.5in margins).
+  // Label column is just wide enough for the longest checkpoint name on
+  // one line (~150pt at 8pt type); the 9 time columns then split the rest
+  // of the 540pt usable width evenly so the grid reaches the right margin.
+  // Explicit table properties as specified: preferred width 7.43in,
+  // row height 0.3in, column 1 (labels) 2.25in, columns 2-9 (times) 0.58in.
+  const TBL_W_IN = 7.43;
+  const ROW_H_IN = 0.3;
+  const LABEL_W_IN = 2.25;
+  const TIME_W_IN = 0.58;
+  const SZ_BODY_PT = 9;
+  const cellStyleBase = `border:1px solid #000;padding:0pt 6pt 0pt 3pt;font-size:${SZ_BODY_PT}pt;font-weight:bold;line-height:1.1;mso-line-height-rule:exactly;`;
+
+  // The in-app preview renders with real browser fonts (Calibri usually
+  // isn't installed, so it falls back to Arial/Helvetica, which is wider
+  // per character than Word's Calibri at the same point size). That was
+  // enough to push long checkpoint names onto a second line here even
+  // though the actual exported .docx fit fine. Measure the true rendered
+  // width with a canvas and shrink just that cell's font until it fits,
+  // the same fix already applied to the PDF export.
+  const _measureCanvas = document.createElement('canvas');
+  const _measureCtx = _measureCanvas.getContext('2d');
+  function fitLabelFontPt(text, maxWidthPx, startPt, minPt) {
+    if (!_measureCtx) return startPt; // no canvas support: fall back to base size
+    let pt = startPt;
+    while (pt > minPt) {
+      _measureCtx.font = `bold ${pt}pt Calibri, Arial, Helvetica, sans-serif`;
+      if (_measureCtx.measureText(text).width <= maxWidthPx) break;
+      pt -= 0.5;
+    }
+    return pt;
+  }
+  const labelPaddingPx = 9 * (96 / 72); // 6pt + 3pt cell padding, in px
+  const labelMaxPx = (LABEL_W_IN * 96) - labelPaddingPx;
+
+  // Fit one size to the single widest checkpoint name, then use that same
+  // size for every row -- so all labels look consistent instead of the
+  // longest two or three being visibly smaller than the rest.
+  const uniformLabelSz = CHECKPOINTS.reduce(
+    (sz, cp) => Math.min(sz, fitLabelFontPt(cp, labelMaxPx, SZ_BODY_PT, 6.5)),
+    SZ_BODY_PT
+  );
+  const labelStyle = `border:1px solid #000;padding:0pt 6pt 0pt 3pt;font-size:${uniformLabelSz}pt;font-weight:bold;line-height:1.1;mso-line-height-rule:exactly;white-space:nowrap;width:${LABEL_W_IN}in;`;
+
+  let rows = '';
+  CHECKPOINTS.forEach(cp => {
+    const times = state.checkpointTimes[cp];
+    rows += `<tr style="height:${ROW_H_IN}in;"><td width="${LABEL_W_IN}in" style="${labelStyle}">` + cp + '</td>';
+    for (let i = 0; i < maxCols; i++) {
+      rows += `<td width="${TIME_W_IN}in" style="${cellStyleBase}width:${TIME_W_IN}in;text-align:center;">` + up(times[i] || '') + '</td>';
+    }
+    rows += '</tr>';
+  });
+
+  const b = (s, keepCase) => `<b>${keepCase ? s : up(s)}</b>`;
+  const GAP = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+
+  // Collect every remark line's HTML first so the exact row count is known
+  // before deciding row height (mirrors the same calculation used for the
+  // real .docx, so the preview always matches what gets emailed).
+  const remarkHtmlRows = [];
+  remarkHtmlRows.push(`${b('CONDUCTED SECURITY CHECK ON AP-1 (SUV): ')}${up((state.ap1Time || '') + (state.ap1Note ? '*' : ''))}`);
+  remarkHtmlRows.push(`${b('CONDUCTED SECURITY CHECK ON AP-2 (Truck): ')}${up((state.ap2Time || '') + (state.ap2Note ? '*' : ''))}`);
+  remarkHtmlRows.push(`${b('CONDUCTED SECURITY CHECK ON SP-10 (Charger): ')}${up((state.ap3Time || '') + (state.ap3Note ? '*' : ''))}`);
+  state.sidaChecks.forEach((t, i) => {
+    remarkHtmlRows.push(`${b(`SIDA CHECK #${i+1} \u2013 Name: `)}${up(t.name)}${GAP}${b('Time: ')}${up(t.time)}${GAP}${b('Employer: ')}${up(t.employer)}`);
+  });
+  state.tugEntries.forEach(t => {
+    remarkHtmlRows.push(`${b('TUG # SECURITY CHECK: ')}${up(t.number)}${GAP}${b('Time: ')}${up(t.time)}${GAP}${b('Airline: ')}${up(t.airline)}`);
+  });
+  remarkHtmlRows.push(`${b('Lock and Dam Area Check: ', true)}${up(state.lockDam)}`);
+  remarkHtmlRows.push(`${b('FBO Employee/Handicap Violations: ', true)}${up(state.violations).replace(/\n/g,' ')}`);
+  remarkHtmlRows.push(`${b('NOTES: ', true)}${up(state.notes).replace(/\n/g,' ')}`);
+  // Blank underlined continuation line beneath NOTES for extra writing space
+  remarkHtmlRows.push('&nbsp;');
+
+  const footnotes = [];
+  if (state.ap1Note) footnotes.push('*' + state.ap1Note);
+  if (state.ap2Note) footnotes.push('*' + state.ap2Note);
+  if (state.ap3Note) footnotes.push('*' + state.ap3Note);
+  footnotes.forEach(f => remarkHtmlRows.push(up(f)));
+
+  // Same fill-to-bottom-margin formula as the real .docx: known-exact
+  // header + grid heights, conservative estimates for the title lines and
+  // REMARKS: label, and the rest of the page divided across these rows.
+  const CONTENT_TH = 15840 - 720 * 2;
+  const HEADER_TH = 260 * 3;
+  const GRID_TH = Math.round(ROW_H_IN * 1440) * CHECKPOINTS.length;
+  const TITLE_TH = 260 * 3 + 60;
+  const REMARKS_LABEL_TH = 195 + 60 + 20;
+  const remainingForTable = CONTENT_TH - HEADER_TH - GRID_TH - TITLE_TH - REMARKS_LABEL_TH;
+  const remarkRowHeightIn = Math.max(200, Math.floor(remainingForTable / remarkHtmlRows.length)) / 1440;
+
+  const plainLine = (html) =>
+    `<tr style="height:${remarkRowHeightIn}in;"><td style="border:none;border-bottom:1px solid #000;padding:0 0 1pt 0;font-size:${SZ_BODY_PT}pt;">${html}</td></tr>`;
+
+  let remarkRows = '';
+  remarkHtmlRows.forEach(html => { remarkRows += plainLine(html); });
+
+  const remarks = `<table width="${TBL_W_IN}in" style="border-collapse:collapse;width:${TBL_W_IN}in;margin:0;">${remarkRows}</table>`;
+
+  // Header lines: two cells at a fixed 50% split, so the second label
+  // (HOURS / UNIT # / SUPERVISOR VERIFICATION) starts at exactly the same
+  // point on every line regardless of how long the first label is.
+  // Both cells carry only a bottom border, and with collapsed borders they
+  // join into one continuous underline running to the right margin.
+  const hdrCell = 'border:none;border-bottom:1px solid #000;padding:0 0 1pt 0;font-size:11pt;';
+  const hdrLine = (l1, v1, l2, v2) => {
+    const left = `${b(l1)}${v1 !== undefined ? up(v1) : ''}`;
+    const right = `${l2 !== undefined ? b(l2) : ''}${v2 !== undefined ? up(v2) : ''}`;
+    return `<tr>` +
+      `<td width="50%" style="${hdrCell}width:50%;">${left}</td>` +
+      `<td width="50%" style="${hdrCell}width:50%;">${right}</td>` +
+    `</tr>`;
+  };
+
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+  /* Word ignores a bare @page rule; the named WordSection below is what
+     actually applies the margins when the file is opened in Word. */
+  @page WordSection1 { size: 8.5in 11.0in; margin: 0.5in 0.5in 0.5in 0.5in; mso-page-orientation: portrait; }
+  div.WordSection1 { page: WordSection1; }
+  @page { size: 8.5in 11in; margin: 0.5in; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+  p { margin: 0; }
+</style></head>
+<body>
+<div class="WordSection1">
+<p style="text-align:center;font-size:12pt;font-weight:bold;margin:0;">RICHMOND COUNTY MARSHAL'S OFFICE</p>
+<p style="text-align:center;font-size:12pt;font-weight:bold;margin:0;">AIRPORT DIVISION</p>
+<p style="text-align:center;font-size:12pt;margin:0 0 4pt;">DAILY REPORT</p>
+<table width="${TBL_W_IN}in" style="border-collapse:collapse;width:${TBL_W_IN}in;margin:0 0 4pt;">
+${hdrLine('DATE: ', state.date, 'HOURS: ', state.hours)}
+${hdrLine('DEPUTY: ', state.deputy, 'UNIT #: ', state.unit)}
+${hdrLine('SUPERVISOR REVIEW:', undefined, 'SUPERVISOR VERIFICATION:', undefined)}
+</table>
+<table width="${TBL_W_IN}in" style="border-collapse:collapse;width:${TBL_W_IN}in;table-layout:fixed;mso-table-layout-alt:fixed;">${rows}</table>
+<p style="font-weight:bold;font-size:9pt;margin:4pt 0 2pt;">REMARKS:</p>
+${remarks}
+</div>
+</body></html>`;
+}
+
+function hasFootnotes() {
+  return !!(state.ap1Note || state.ap2Note || state.ap3Note);
+}
+
+function docFilename() {
+  return `${formatFilenameDate().replace(/-/g, '')}.docx`;
+}
+
+function formatFilenameDate() {
+  // Use the Date field -- the date the log begins -- so a night shift that
+  // ends after midnight still files under the day it started. Accepts
+  // MMDDYY as typed, and falls back to today only if the field is blank.
+  const m = (state.date || '').match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  // Also accept MM-DD-YY or MM/DD/YY in case it's typed that way.
+  const alt = (state.date || '').match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+  if (alt) {
+    const mm = alt[1].padStart(2, '0');
+    const dd = alt[2].padStart(2, '0');
+    const yy = alt[3].slice(-2);
+    return `${mm}-${dd}-${yy}`;
+  }
+
+  const now = new Date();
+  return [
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+    String(now.getFullYear()).slice(-2)
+  ].join('-');
+}
+
+// ---------------------------------------------------------------
+// Real .docx generation (Office Open XML).
+// The previous export was HTML with a .doc extension, which mail apps
+// and browsers render as a web page instead of opening in Word. A .docx
+// is a ZIP of XML parts, so there is a small ZIP writer below. Files are
+// stored uncompressed (method 0) which Word accepts and keeps this
+// dependency-free and offline-capable.
+// ---------------------------------------------------------------
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function zipBuild(files) {
+  const enc = new TextEncoder();
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+
+  const u16 = n => [n & 0xFF, (n >>> 8) & 0xFF];
+  const u32 = n => [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF];
+
+  files.forEach(f => {
+    const nameBytes = enc.encode(f.name);
+    const data = enc.encode(f.data);
+    const crc = crc32(data);
+
+    const local = [].concat(
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(data.length), u32(data.length),
+      u16(nameBytes.length), u16(0)
+    );
+    chunks.push(new Uint8Array(local), nameBytes, data);
+
+    central.push([].concat(
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(data.length), u32(data.length),
+      u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0),
+      u32(offset)
+    ).concat(Array.from(nameBytes)));
+
+    offset += local.length + nameBytes.length + data.length;
+  });
+
+  const centralBytes = [];
+  central.forEach(c => centralBytes.push(...c));
+  const centralArr = new Uint8Array(centralBytes);
+
+  const end = new Uint8Array([].concat(
+    u32(0x06054b50), u16(0), u16(0),
+    u16(files.length), u16(files.length),
+    u32(centralArr.length), u32(offset), u16(0)
+  ));
+
+  let total = 0;
+  chunks.forEach(c => total += c.length);
+  const out = new Uint8Array(total + centralArr.length + end.length);
+  let p = 0;
+  chunks.forEach(c => { out.set(c, p); p += c.length; });
+  out.set(centralArr, p); p += centralArr.length;
+  out.set(end, p);
+  return out;
+}
+
+function xesc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+// --- WordprocessingML helpers ---------------------------------------
+
+// runs: array of { t: text, b: bold }
+function wRuns(runs, szHalfPt) {
+  return runs.map(r => {
+    const props = `<w:rPr>${r.b ? '<w:b/>' : ''}${szHalfPt ? `<w:sz w:val="${szHalfPt}"/><w:szCs w:val="${szHalfPt}"/>` : ''}${r.u ? '<w:u w:val="single"/>' : ''}</w:rPr>`;
+    return `<w:r>${props}<w:t xml:space="preserve">${xesc(r.t)}</w:t></w:r>`;
+  }).join('');
+}
+
+function wPara(runs, opts) {
+  const o = opts || {};
+  const jc = o.align ? `<w:jc w:val="${o.align}"/>` : '';
+  const spacing = `<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="240" w:lineRule="auto"/>`;
+  return `<w:p><w:pPr>${spacing}${jc}</w:pPr>${wRuns(runs, o.sz)}</w:p>`;
+}
+
+function wCell(widthTw, runs, opts) {
+  const o = opts || {};
+  const borders = o.borders || '<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders>';
+  const margins = '<w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="60" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tcMar>';
+  const valign = '<w:vAlign w:val="center"/>';
+  return `<w:tc><w:tcPr><w:tcW w:w="${widthTw}" w:type="dxa"/>${borders}${margins}${valign}</w:tcPr>` +
+         wPara(runs, { sz: o.sz, align: o.align }) + `</w:tc>`;
+}
+
+const BOX_BORDERS =
+  '<w:tcBorders>' +
+  '<w:top w:val="single" w:sz="6" w:color="000000"/>' +
+  '<w:left w:val="single" w:sz="6" w:color="000000"/>' +
+  '<w:bottom w:val="single" w:sz="6" w:color="000000"/>' +
+  '<w:right w:val="single" w:sz="6" w:color="000000"/>' +
+  '</w:tcBorders>';
+
+const UNDERLINE_BORDERS =
+  '<w:tcBorders>' +
+  '<w:top w:val="nil"/><w:left w:val="nil"/>' +
+  '<w:bottom w:val="single" w:sz="6" w:color="000000"/>' +
+  '<w:right w:val="nil"/>' +
+  '</w:tcBorders>';
+
+function buildDocumentXml() {
+  const up = s => (s || '').toString().toUpperCase();
+
+  // Page: 8.5x11in letter. Margins 0.4in top/bottom, 0.5in sides.
+  const PAGE_W = 12240, PAGE_H = 15840;
+  const MARGIN_X = 720, MARGIN_Y = 720;   // 0.5in on all sides
+  const CONTENT_TW = PAGE_W - MARGIN_X * 2;      // 10800 twips = 7.5in
+
+  // Explicit table properties as specified: preferred width 7.43in,
+  // row height 0.3in, column 1 (labels) 2.25in, columns 2-9 (times) 0.58in.
+  const TBL_PREFERRED_TW = Math.round(7.43 * 1440); // 10699
+  const ROW_HEIGHT_TW = Math.round(0.3 * 1440);     // 432
+  const LABEL_TW = Math.round(2.25 * 1440);         // 3240
+  const TIME_TW = Math.round(0.58 * 1440);          // 835
+  const GRID_TW = LABEL_TW + TIME_TW * MAX_ROUNDS;
+
+  // Font sizes (half-points): header block 12pt, DATE-through-SUPERVISOR
+  // VERIFICATION lines 11pt, grid + everything below it 9pt.
+  const SZ_HEADER = 24;
+  const SZ_INFO = 22;
+  const SZ_BODY = 18;
+
+  let body = '';
+
+  // --- Title block ---
+  body += wPara([{ t: "RICHMOND COUNTY MARSHAL'S OFFICE", b: true }], { align: 'center', sz: SZ_HEADER });
+  body += wPara([{ t: 'AIRPORT DIVISION', b: true }], { align: 'center', sz: SZ_HEADER });
+  body += wPara([{ t: 'DAILY REPORT' }], { align: 'center', sz: SZ_HEADER, after: 60 });
+
+  // --- Header: 3 rows x 2 equal cells, bottom border only ---
+  const halfTw = Math.floor(TBL_PREFERRED_TW / 2);
+  const hdrRow = (l1, v1, l2, v2) =>
+    `<w:tr><w:trPr><w:trHeight w:val="260" w:hRule="exact"/></w:trPr>` +
+    wCell(halfTw, [{ t: l1, b: true }, { t: up(v1) }], { sz: SZ_INFO, borders: UNDERLINE_BORDERS }) +
+    wCell(halfTw, [{ t: l2, b: true }, { t: up(v2) }], { sz: SZ_INFO, borders: UNDERLINE_BORDERS }) +
+    `</w:tr>`;
+
+  body += `<w:tbl><w:tblPr><w:tblW w:w="${TBL_PREFERRED_TW}" w:type="dxa"/><w:tblLayout w:type="fixed"/>` +
+    `<w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
+    `<w:tblGrid><w:gridCol w:w="${halfTw}"/><w:gridCol w:w="${halfTw}"/></w:tblGrid>` +
+    hdrRow('DATE: ', state.date, 'HOURS: ', state.hours) +
+    hdrRow('DEPUTY: ', state.deputy, 'UNIT #: ', state.unit) +
+    hdrRow('SUPERVISOR REVIEW:', '', 'SUPERVISOR VERIFICATION:', '') +
+    `</w:tbl>`;
+
+  // --- Checkpoint grid ---
+  let gridRows = '';
+  CHECKPOINTS.forEach(cp => {
+    const times = state.checkpointTimes[cp] || [];
+    let cells = wCell(LABEL_TW, [{ t: cp, b: true }], { sz: SZ_BODY, borders: BOX_BORDERS });
+    for (let i = 0; i < MAX_ROUNDS; i++) {
+      cells += wCell(TIME_TW, [{ t: up(times[i] || ''), b: true }], { sz: SZ_BODY, align: 'center', borders: BOX_BORDERS });
+    }
+    gridRows += `<w:tr><w:trPr><w:trHeight w:val="${ROW_HEIGHT_TW}" w:hRule="exact"/></w:trPr>${cells}</w:tr>`;
+  });
+
+  let grid = `<w:tbl><w:tblPr><w:tblW w:w="${TBL_PREFERRED_TW}" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>`;
+  grid += `<w:gridCol w:w="${LABEL_TW}"/>`;
+  for (let i = 0; i < MAX_ROUNDS; i++) grid += `<w:gridCol w:w="${TIME_TW}"/>`;
+  grid += `</w:tblGrid>${gridRows}</w:tbl>`;
+  body += grid;
+
+  // --- Remarks ---
+  body += wPara([{ t: 'REMARKS:', b: true }], { sz: SZ_BODY, before: 60, after: 20 });
+
+  const GAP = '     ';
+
+  // Collect every remark line's content first (without a fixed row height)
+  // so the exact row count is known up front. The available space down to
+  // the bottom margin is then divided evenly across those rows, so the
+  // table always reaches the margin instead of leaving a gap sized by
+  // whatever a fixed row height happened to add up to.
+  const remarkRowsData = [];
+  remarkRowsData.push([
+    { t: 'CONDUCTED SECURITY CHECK ON AP-1 (SUV): ', b: true },
+    { t: up((state.ap1Time || '') + (state.ap1Note ? '*' : '')) }
+  ]);
+  remarkRowsData.push([
+    { t: 'CONDUCTED SECURITY CHECK ON AP-2 (TRUCK): ', b: true },
+    { t: up((state.ap2Time || '') + (state.ap2Note ? '*' : '')) }
+  ]);
+  remarkRowsData.push([
+    { t: 'CONDUCTED SECURITY CHECK ON SP-10 (CHARGER): ', b: true },
+    { t: up((state.ap3Time || '') + (state.ap3Note ? '*' : '')) }
+  ]);
+  (state.sidaChecks || []).forEach((t, i) => {
+    remarkRowsData.push([
+      { t: `SIDA CHECK #${i + 1} \u2013 NAME: `, b: true }, { t: up(t.name) },
+      { t: GAP + 'TIME: ', b: true }, { t: up(t.time) },
+      { t: GAP + 'EMPLOYER: ', b: true }, { t: up(t.employer) }
+    ]);
+  });
+  (state.tugEntries || []).forEach(t => {
+    remarkRowsData.push([
+      { t: 'TUG # SECURITY CHECK: ', b: true }, { t: up(t.number) },
+      { t: GAP + 'TIME: ', b: true }, { t: up(t.time) },
+      { t: GAP + 'AIRLINE: ', b: true }, { t: up(t.airline) }
+    ]);
+  });
+  remarkRowsData.push([{ t: 'Lock and Dam Area Check: ', b: true }, { t: up(state.lockDam) }]);
+  remarkRowsData.push([{ t: 'FBO Employee/Handicap Violations: ', b: true }, { t: up(state.violations).replace(/\n/g, ' ') }]);
+  remarkRowsData.push([{ t: 'NOTES: ', b: true }, { t: up(state.notes).replace(/\n/g, ' ') }]);
+  remarkRowsData.push([{ t: '' }]);
+
+  const foot = [];
+  if (state.ap1Note) foot.push('*' + state.ap1Note);
+  if (state.ap2Note) foot.push('*' + state.ap2Note);
+  if (state.ap3Note) foot.push('*' + state.ap3Note);
+  foot.forEach(f => remarkRowsData.push([{ t: up(f) }]));
+
+  // Known-exact heights above the remarks table (header + checkpoint grid
+  // both use hRule="exact", so these are precise); title lines and the
+  // REMARKS: label use conservative estimates for Word's single-spacing
+  // line height at their font sizes, leaving the rest of the page for the
+  // remarks table itself.
+  const CONTENT_TH = 15840 - 720 * 2; // page height minus top/bottom margins
+  const HEADER_TH = 260 * 3;
+  const GRID_TH = ROW_HEIGHT_TW * CHECKPOINTS.length;
+  const TITLE_TH = 260 * 3 + 60; // 3 lines at SZ_HEADER (12pt) + trailing spacing
+  const REMARKS_LABEL_TH = 195 + 60 + 20; // 1 line at SZ_BODY (9pt) + spacing before/after
+  const remainingForTable = CONTENT_TH - HEADER_TH - GRID_TH - TITLE_TH - REMARKS_LABEL_TH;
+  const remarkRowHeightTw = Math.max(200, Math.floor(remainingForTable / remarkRowsData.length));
+
+  const remarkLine = runs =>
+    `<w:tr><w:trPr><w:trHeight w:val="${remarkRowHeightTw}" w:hRule="exact"/></w:trPr>` +
+    wCell(TBL_PREFERRED_TW, runs, { sz: SZ_BODY, borders: UNDERLINE_BORDERS }) +
+    `</w:tr>`;
+
+  let rRows = '';
+  remarkRowsData.forEach(runs => { rRows += remarkLine(runs); });
+
+  body += `<w:tbl><w:tblPr><w:tblW w:w="${TBL_PREFERRED_TW}" w:type="dxa"/><w:tblLayout w:type="fixed"/>` +
+    `<w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
+    `<w:tblGrid><w:gridCol w:w="${TBL_PREFERRED_TW}"/></w:tblGrid>${rRows}</w:tbl>`;
+
+  const sectPr = `<w:sectPr><w:pgSz w:w="${PAGE_W}" w:h="${PAGE_H}"/>` +
+    `<w:pgMar w:top="${MARGIN_Y}" w:right="${MARGIN_X}" w:bottom="${MARGIN_Y}" w:left="${MARGIN_X}" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>`;
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:body>${body}${sectPr}</w:body></w:document>`;
+}
+
+function makeDocxBlob() {
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`;
+
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults><w:rPrDefault><w:rPr>
+<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>
+<w:sz w:val="22"/><w:szCs w:val="22"/>
+</w:rPr></w:rPrDefault>
+<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault>
+</w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+</w:styles>`;
+
+  const bytes = zipBuild([
+    { name: '[Content_Types].xml', data: contentTypes },
+    { name: '_rels/.rels', data: rels },
+    { name: 'word/_rels/document.xml.rels', data: docRels },
+    { name: 'word/document.xml', data: buildDocumentXml() },
+    { name: 'word/styles.xml', data: styles }
+  ]);
+
+  return new Blob([bytes], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+}
+
+function makeDocBlob() {
+  const html = buildWordDocHtml();
+  return new Blob(['\ufeff', html], { type: 'application/msword' });
+}
+
+function showPreview() {
+  // Single source of truth: the preview renders the exact HTML that
+  // buildWordDocHtml() produces, scaled down to fit the screen. Any change
+  // to the document is therefore reflected in the preview automatically —
+  // there is no separate preview markup that can drift out of sync.
+  const docHtml = buildWordDocHtml();
+  const bodyMatch = docHtml.match(/<body>([\s\S]*?)<\/body>/i);
+  const body = bodyMatch ? bodyMatch[1] : docHtml;
+
+  const page = document.getElementById('previewContent');
+  page.innerHTML = `<div class="doc-scaler" id="docScaler"><div class="doc-page" id="docPage">${body}</div></div>`;
+  document.getElementById('previewOverlay').classList.add('open');
+  scalePreview();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(scalePreview);
+}
+
+// The document is laid out at 540pt (7.5in) wide. Scale that down to the
+// available screen width so the on-screen proportions match the printed page.
+function scalePreview() {
+  const el = document.getElementById('docPage');
+  const scaler = document.getElementById('docScaler');
+  if (!el || !scaler) return;
+  const DOC_WIDTH_PX = 816; // full 8.5in page at 96dpi
+  const overlay = document.getElementById('previewOverlay');
+  // clientWidth can read 0 before layout settles; fall back to the window
+  // width and clamp, otherwise the scale goes negative and flips the page.
+  const measured = overlay.clientWidth || window.innerWidth || DOC_WIDTH_PX;
+  const avail = Math.max(200, measured - 24);
+  const scale = Math.max(0.1, Math.min(1, avail / DOC_WIDTH_PX));
+  el.style.transform = `scale(${scale})`;
+  // Set the height on the wrapper, not on the page itself -- writing a
+  // height onto the measured element distorts the page proportions.
+  scaler.style.height = (el.offsetHeight * scale) + 'px';
+}
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('previewOverlay').classList.contains('open')) scalePreview();
+});
+
+
+function closePreview() {
+  document.getElementById('previewOverlay').classList.remove('open');
+}
+
+async function saveWordDoc() {
+  let blob;
+  try {
+    blob = makeDocxBlob();
+  } catch (e) {
+    alert('Could not create the Word file.\n\n' + (e && e.message ? e.message : e));
+    return;
+  }
+  const filename = docFilename();
+  const file = new File([blob], filename, { type: DOCX_MIME });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      setTip('In the share sheet, choose "Save to Files" to pick Documents.');
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        setTip('Cancelled.');
+        return;
+      }
+      // Some devices block sharing .docx files outright (see Email Word) --
+      // fall through to a plain download instead of silently doing nothing.
+      setTip('Share blocked on this device — downloading instead.');
+    }
+  }
+
+  // Fallback: browsers without native file sharing (mostly desktop) —
+  // this saves to the browser's Downloads folder; a webpage cannot choose
+  // "Documents" or any other folder for you, that's an OS/browser restriction.
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setTip('Saved to your Downloads folder (browsers can\'t choose Documents directly).');
+}
+
+// Shared send path for both formats: try the native share sheet first
+// (attaches the file directly to Mail), otherwise download it and open a
+// blank email with a reminder to attach.
+// Auto-attaching to an email requires the Web Share API with file support.
+// That API is only exposed in a "secure context" -- an https:// address or
+// localhost. A file opened straight from Downloads (file:// or content://)
+// has no secure origin, so the browser hides sharing entirely and the only
+// remaining route is download-then-attach-by-hand. mailto: links can never
+// carry an attachment, in any browser.
+// True when the page is running inside another page's frame, e.g. the
+// Claude app's artifact viewer. Sandboxed frames cannot open the share
+// sheet, so auto-attach is impossible there no matter what.
+function isEmbedded() {
+  try { return window.self !== window.top; } catch (e) { return true; }
+}
+
+// Auto-attach-to-email is a mobile capability: the receiving share target
+// list on a phone includes Mail directly, and the file lands in a new
+// compose window already attached. Desktop Chrome's share API is far
+// stricter (it commonly rejects file shares with a user-gesture error even
+// from a direct click) and even when it succeeds, Windows' share menu has
+// no "attach to email compose window" target the way Android does. So this
+// was never going to work on a PC -- skip attempting it there and go
+// straight to a clean download instead of a confusing failure.
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+}
+
+function canAutoAttach(file) {
+  return !!(
+    isMobileDevice() &&
+    window.isSecureContext &&
+    !isEmbedded() &&
+    navigator.canShare &&
+    navigator.canShare({ files: [file] })
+  );
+}
+
+function attachBlockedReason() {
+  if (!isMobileDevice()) return "Auto-attach only works on phones. On a PC, save the file and attach it in your email app yourself — that's a normal desktop limitation, not something broken.";
+  if (isEmbedded()) return 'Auto-attach is blocked inside the Claude app preview. Open the app from its own web address to attach automatically.';
+  if (!window.isSecureContext) return 'Auto-attach needs the app opened from an https:// address.';
+  return 'This browser cannot attach files to email automatically.';
+}
+
+async function shareReport(blob, filename, mime) {
+  const subject = `Daily Log (${formatFilenameDate().replace(/-/g, '')})`; // mmddyy, no dashes, per spec
+
+  // Real-device testing confirmed that this Android/Chrome combination
+  // rejects navigator.share() for the long OOXML MIME string
+  // (application/vnd.openxmlformats-officedocument.wordprocessingml.document)
+  // with NotAllowedError, even though canShare() reports it as supported.
+  // A generic MIME passes fine -- Android identifies the file type from its
+  // .docx extension for the receiving app (Gmail, etc.), not from this MIME.
+  //
+  // Just as important: Chrome only honors ONE navigator.share() call per
+  // user tap. A failed first attempt followed by a second share() call
+  // (a retry) fails differently -- "Must be handling a user gesture" --
+  // because the tap's user-activation was already spent on the first call.
+  // So there must be exactly one share() call, using the MIME most likely
+  // to be accepted, decided before that single call is made.
+  const shareMime = (mime === DOCX_MIME) ? 'application/octet-stream' : mime;
+  const file = new File([blob], filename, { type: shareMime });
+
+  if (canAutoAttach(file)) {
+    try {
+      await navigator.share({ files: [file], title: subject, text: subject });
+      setTip('Shared — pick Mail to send with the file attached.');
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        setTip('Share cancelled.');
+        return;
+      }
+      setTip('Share failed — downloading instead.');
+      // Real-device testing traced a "Permission denied" specifically on
+      // .docx files (confirmed even with a fake, harmless .docx) to
+      // Android's own security scanning of Office-format (zip-based) files
+      // shared straight from a webpage -- a device-level block, not
+      // something this app's code can open. Word downloads instead so
+      // nothing is lost; Email PDF is the reliable one-tap option.
+      if (mime === DOCX_MIME && e && e.name === 'NotAllowedError') {
+        alert('Your phone is blocking Word documents from being auto-attached (a security feature on this device for Office-format files, not a bug in the app). The file will download instead — use Email PDF for one-tap attaching.');
+      } else {
+        alert('Share sheet failed to open.\n\n' + (e && e.name || 'Error') + ': ' + (e && e.message || e));
+      }
+    }
+  }
+
+  // Fallback: download only, using the ORIGINAL mime so the saved file is
+  // still correctly typed. Deliberately no mailto: link here -- a mailto
+  // can never carry an attachment, so opening a blank email just looks like
+  // the attachment failed. Better to hand over the file and say why.
+  const downloadBlob = blob.type === mime ? blob : new Blob([blob], { type: mime });
+  const url = URL.createObjectURL(downloadBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  setTip('Saved "' + filename + '". ' + attachBlockedReason());
+}
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+function pdfFilename() {
+  return `${formatFilenameDate().replace(/-/g, '')}.pdf`;
+}
+
+// jsPDF is loaded on demand and only needed for the PDF option, so the
+// app still works fully offline otherwise.
+function loadJsPdfLib() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
+  return new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => resolve(!!(window.jspdf && window.jspdf.jsPDF));
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+    setTimeout(() => resolve(!!(window.jspdf && window.jspdf.jsPDF)), 8000);
+  });
+}
+
+// Draws the report directly with jsPDF's own text/line/rect primitives --
+// no HTML screenshot involved. The earlier approach (html2canvas via
+// html2pdf) rendered blank on every platform it was tried on: phone, and
+// now PC too. That is a sign the screenshot method itself is unreliable in
+// this environment, not a tuning problem, so it has been replaced rather
+// than adjusted again.
+function buildPdfBlob() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+  const up = s => (s || '').toString().toUpperCase();
+
+  const PAGE_W = 8.5, MARGIN = 0.5;
+  const LEFT = MARGIN, RIGHT = PAGE_W - MARGIN;
+  const LABEL_W = 2.25, TIME_W = 0.58;
+  const GRID_W = LABEL_W + TIME_W * MAX_ROUNDS; // matches the .docx grid's actual width
+  let y = MARGIN;
+
+  const setFont = (sz, bold) => { doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(sz); };
+
+  // Shrinks font size (down to a floor) until text fits maxWidth, so long
+  // checkpoint names can never collide with the grid's column divider.
+  function fitFontSize(text, maxWidth, startSz, minSz, bold) {
+    let sz = startSz;
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    while (sz > minSz) {
+      doc.setFontSize(sz);
+      if (doc.getTextWidth(text) <= maxWidth) break;
+      sz -= 0.5;
+    }
+    return sz;
+  }
+
+  // Draws label (bold) immediately followed by value (normal) on one line,
+  // returning the x position right after the printed text.
+  function runLine(x, yy, parts, sz) {
+    let cx = x;
+    parts.forEach(p => {
+      setFont(sz, !!p.b);
+      doc.text(p.t, cx, yy);
+      cx += doc.getTextWidth(p.t);
+    });
+    return cx;
+  }
+
+  // --- Title ---
+  setFont(12, true);
+  doc.text("RICHMOND COUNTY MARSHAL'S OFFICE", PAGE_W / 2, y + 0.14, { align: 'center' });
+  y += 0.22;
+  doc.text('AIRPORT DIVISION', PAGE_W / 2, y + 0.14, { align: 'center' });
+  y += 0.22;
+  setFont(12, false);
+  doc.text('DAILY REPORT', PAGE_W / 2, y + 0.14, { align: 'center' });
+  y += 0.30;
+
+  // --- Header: DATE/HOURS, DEPUTY/UNIT #, SUPERVISOR lines ---
+  const HDR_ROW_H = 0.22;
+  const halfX = LEFT + GRID_W / 2;
+  function hdrRow(l1, v1, l2, v2) {
+    runLine(LEFT, y + 0.15, [{ t: l1, b: true }, { t: up(v1) }], 11);
+    runLine(halfX, y + 0.15, [{ t: l2, b: true }, { t: up(v2) }], 11);
+    y += HDR_ROW_H;
+    doc.setLineWidth(0.007);
+    doc.line(LEFT, y, LEFT + GRID_W, y);
+  }
+  hdrRow('DATE: ', state.date, 'HOURS: ', state.hours);
+  hdrRow('DEPUTY: ', state.deputy, 'UNIT #: ', state.unit);
+  hdrRow('SUPERVISOR REVIEW:', '', 'SUPERVISOR VERIFICATION:', '');
+  y += 0.12;
+
+  // --- Checkpoint grid ---
+  const ROW_H = 0.3;
+  const gridTop = y;
+  doc.setLineWidth(0.007);
+  const labelMaxW = LABEL_W - 0.12; // clearance on both sides of the text
+  // Fit one size to the single widest checkpoint name, then use that same
+  // size for every row so all labels are visually consistent.
+  const uniformLabelSz = CHECKPOINTS.reduce(
+    (sz, cp) => Math.min(sz, fitFontSize(cp, labelMaxW, 9, 6.5, true)),
+    9
+  );
+  CHECKPOINTS.forEach((cp, i) => {
+    const rowY = gridTop + i * ROW_H;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(uniformLabelSz);
+    doc.text(cp, LEFT + 0.06, rowY + ROW_H / 2 + 0.03);
+    const times = state.checkpointTimes[cp] || [];
+    setFont(9, true);
+    for (let j = 0; j < MAX_ROUNDS; j++) {
+      const cx = LEFT + LABEL_W + j * TIME_W;
+      const val = up(times[j] || '');
+      if (val) doc.text(val, cx + TIME_W / 2, rowY + ROW_H / 2 + 0.03, { align: 'center' });
+    }
+  });
+  // Grid borders: outer box, horizontal row lines, vertical column lines.
+  const gridBottom = gridTop + CHECKPOINTS.length * ROW_H;
+  for (let i = 0; i <= CHECKPOINTS.length; i++) {
+    const ly = gridTop + i * ROW_H;
+    doc.line(LEFT, ly, LEFT + GRID_W, ly);
+  }
+  doc.line(LEFT, gridTop, LEFT, gridBottom);
+  for (let j = 0; j <= MAX_ROUNDS; j++) {
+    const lx = LEFT + LABEL_W + j * TIME_W;
+    doc.line(lx, gridTop, lx, gridBottom);
+  }
+  y = gridBottom + 0.18;
+
+  // --- Remarks ---
+  setFont(9, true);
+  doc.text('REMARKS:', LEFT, y);
+  y += 0.20;
+
+  const GAP = '     ';
+
+  // Collect every remark line's content first (without drawing) so the
+  // exact row count is known before deciding how tall each row should be.
+  // The table's rows are then stretched so the LAST line's underline lands
+  // exactly on the bottom margin, instead of a fixed row height that
+  // leaves a gap whose size depends on how many rows happen to exist.
+  const remarkParts = [];
+  remarkParts.push([
+    { t: 'CONDUCTED SECURITY CHECK ON AP-1 (SUV): ', b: true },
+    { t: up((state.ap1Time || '') + (state.ap1Note ? '*' : '')) }
+  ]);
+  remarkParts.push([
+    { t: 'CONDUCTED SECURITY CHECK ON AP-2 (TRUCK): ', b: true },
+    { t: up((state.ap2Time || '') + (state.ap2Note ? '*' : '')) }
+  ]);
+  remarkParts.push([
+    { t: 'CONDUCTED SECURITY CHECK ON SP-10 (CHARGER): ', b: true },
+    { t: up((state.ap3Time || '') + (state.ap3Note ? '*' : '')) }
+  ]);
+  (state.sidaChecks || []).forEach((t, i) => {
+    remarkParts.push([
+      { t: `SIDA CHECK #${i + 1} \u2013 NAME: `, b: true }, { t: up(t.name) },
+      { t: GAP + 'TIME: ', b: true }, { t: up(t.time) },
+      { t: GAP + 'EMPLOYER: ', b: true }, { t: up(t.employer) }
+    ]);
+  });
+  (state.tugEntries || []).forEach(t => {
+    remarkParts.push([
+      { t: 'TUG # SECURITY CHECK: ', b: true }, { t: up(t.number) },
+      { t: GAP + 'TIME: ', b: true }, { t: up(t.time) },
+      { t: GAP + 'AIRLINE: ', b: true }, { t: up(t.airline) }
+    ]);
+  });
+  remarkParts.push([{ t: 'Lock and Dam Area Check: ', b: true }, { t: up(state.lockDam) }]);
+  remarkParts.push([{ t: 'FBO Employee/Handicap Violations: ', b: true }, { t: up(state.violations).replace(/\n/g, ' ') }]);
+  remarkParts.push([{ t: 'NOTES: ', b: true }, { t: up(state.notes).replace(/\n/g, ' ') }]);
+  remarkParts.push([{ t: '' }]);
+
+  const foot = [];
+  if (state.ap1Note) foot.push('*' + state.ap1Note);
+  if (state.ap2Note) foot.push('*' + state.ap2Note);
+  if (state.ap3Note) foot.push('*' + state.ap3Note);
+  foot.forEach(f => remarkParts.push([{ t: up(f) }]));
+
+  const PAGE_H = 11; // letter page height, inches
+  const BOTTOM = PAGE_H - MARGIN; // bottom margin y-coordinate
+  const fitLineH = Math.max(0.14, (BOTTOM - y) / remarkParts.length);
+
+  remarkParts.forEach(parts => {
+    runLine(LEFT, y, parts, 9);
+    doc.setLineWidth(0.006);
+    doc.line(LEFT, y + 0.035, LEFT + GRID_W, y + 0.035); // just below this line's baseline
+    y += fitLineH; // advance by the stretched row height
+  });
+
+  return doc.output('blob');
+}
+
+async function emailPdf() {
+  setTip('Building PDF…');
+  const ok = await loadJsPdfLib();
+  if (!ok) {
+    setTip('No connection for PDF — use Print, then Save as PDF.');
+    printReport();
+    return;
+  }
+  try {
+    const blob = buildPdfBlob();
+    if (!blob || !blob.size) throw new Error('PDF came out empty');
+    setTip('');
+    await shareReport(blob, pdfFilename(), 'application/pdf');
+  } catch (e) {
+    setTip('PDF failed: ' + (e && e.message ? e.message : e));
+    printReport();
+  }
+}
+
+// Opens the print dialog with the report laid out, so the phone's own
+// "Save as PDF" can be used when the PDF library is unavailable.
+function printReport() {
+  const docHtml = buildWordDocHtml();
+  const w = window.open('', '_blank');
+  if (!w) {
+    setTip('Allow pop-ups to print.');
+    return;
+  }
+  w.document.write(docHtml);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 400);
+}
+
+// Saves the current report to a .json file. Web storage can be cleared by
+// the browser or lost when switching devices, so this is the reliable way
+// to keep a copy or move a shift's data to another phone.
+function backupData() {
+  try {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Daily Log Backup (${formatFilenameDate()}).json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setTip('Backup saved.');
+  } catch (e) {
+    setTip('Backup failed.');
+  }
+}
+
+function restoreData(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const loaded = JSON.parse(reader.result);
+      if (!loaded || typeof loaded !== 'object') throw new Error('bad file');
+      state = Object.assign(state, loaded);
+      CHECKPOINTS.forEach(c => { if (!state.checkpointTimes[c]) state.checkpointTimes[c] = []; });
+      saveState();
+      renderAll();
+      setTip('Backup restored.');
+    } catch (e) {
+      setTip('That file could not be read.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// Status messages must be visible even when the menu is closed, so write
+// to the top status line as well as the tip inside the toolbar.
+function setTip(msg) {
+  const tip = document.getElementById('tip');
+  if (tip) tip.textContent = msg;
+  const st = document.getElementById('status');
+  if (st) { st.textContent = msg; st.className = 'status'; }
+}
+
+function toggleMenu(open) {
+  const tb = document.getElementById('toolbar');
+  const fab = document.getElementById('menuFab');
+  tb.classList.toggle('collapsed', !open);
+  fab.classList.toggle('hidden', open);
+}
+
+function clearReport() {
+  if (!confirm('Start a new report? This clears all current fields.')) return;
+  state = {
+    date: '', hours: '', deputy: '', unit: '',
+    checkpointTimes: {},
+    ap1Time: '', ap1Note: '', ap2Time: '', ap2Note: '', ap3Time: '', ap3Note: '',
+    sidaChecks: [{name:'',time:'',employer:''}, {name:'',time:'',employer:''}],
+    tugEntries: [{number:'',time:'',airline:''}],
+    lockDam: '', violations: '', notes: ''
+  };
+  CHECKPOINTS.forEach(c => state.checkpointTimes[c] = []);
+  saveState();
+  renderAll();
+  setTip('Fill in the report, then view or email the matching Word doc.');
+}
+
+// Tell the user up front whether auto-attach is available in this context.
+function reportCapabilities() {
+  if (!tip) return;
+  if (isEmbedded()) {
+    setTip('Preview mode: files download instead of attaching to email.');
+  } else if (!window.isSecureContext) {
+    setTip('Opened as a local file — email auto-attach and saving are limited.');
+  }
+}
+
+loadState();
+reportCapabilities();
+</script>
+</body>
+</html>
